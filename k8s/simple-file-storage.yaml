@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-file-storage
+  labels:
+    app: simple-file-storage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple-file-storage
+  template:
+    metadata:
+      labels:
+        app: simple-file-storage
+    spec:
+      containers:
+        - name: simple-file-storage
+          image: your-docker-registry/simple-file-storage:latest
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 3000
+
+          env:
+            - name: PORT
+              value: "3000"
+
+            - name: URI_PREFIX
+              value: "/bobby"
+
+            - name: UPLOAD_DIR
+              value: "/data"
+
+            - name: PUBLIC_BASE_URL
+              value: "http://simple-file-storage:3000/bobby"
+
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: simple-file-storage-secrets
+                  key: jwt-secret
+
+            - name: INTERNAL_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: simple-file-storage-secrets
+                  key: internal-secret
+
+            - name: RUST_LOG
+              value: "info"
+
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+            successThreshold: 1
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 10
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: file-storage-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simple-file-storage
+spec:
+  selector:
+    app: simple-file-storage
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+  type: ClusterIP

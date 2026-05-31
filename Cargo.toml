@@ -1,0 +1,18 @@
+[package]
+name = "simple-file-storage"
+version = "0.1.2"
+edition = "2024"
+
+[dependencies]
+axum = { version = "0.8", features = ["multipart"] } # Multipart extractor 【2-1409d1】
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["io"] }
+tower-http = { version = "0.6", features = ["trace", "request-id"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+jsonwebtoken = { version = "10", features = ["aws_lc_rs"] } # HS256 etc 【4-99feea】【5-0ede5a】
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+time = "0.3"
+anyhow = "1"
+uuid = { version = "1", features = ["v4"] }
