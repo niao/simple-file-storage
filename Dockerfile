@@ -1,51 +1,36 @@
 # ---------- Build stage ----------
-FROM rust:1.96 AS builder
+FROM rust:1.96-alpine AS builder
 
 WORKDIR /app
 
 # Копируем файлы зависимостей
 COPY Cargo.toml Cargo.lock ./
 
-# Создаём заглушку для кэширования зависимостей
-RUN mkdir src \
-    && echo 'fn main() { println!("Hello, world!"); }' > src/main.rs
+RUN mkdir -p src
 
-# Собираем зависимости (кэшируется при неизменных Cargo.toml/Cargo.lock)
-RUN cargo build --release
+COPY src /app/src
 
-# Удаляем заглушку
-RUN rm -rf src
-
-# Копируем исходный код
-COPY src ./src
-
-# Финальная сборка приложения
+# Финальная сборка реального приложения
 RUN cargo build --release
 
 # ---------- Runtime stage ----------
-FROM debian:bookworm-slim
+FROM alpine:latest
 
 WORKDIR /app
 
-# Устанавливаем необходимые системные зависимости
-RUN apt-get update \
-    && apt-get install -y ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+# Устанавливаем зависимости
+RUN apk add --no-cache ca-certificates
 
-# Копируем собранный бинарник (используем правильное имя из Cargo.toml)
+# Копируем бинарник
 COPY --from=builder /app/target/release/simple-file-storage /usr/local/bin/simple-file-storage
 
-# Создаём директорию для данных
 RUN mkdir -p /data
 
-# Задаём переменные окружения
 ENV RUST_LOG=info
 ENV PORT=3000
 ENV URI_PREFIX=
 ENV UPLOAD_DIR=/data
 
-# Открываем порт
 EXPOSE 3000
 
-# Команда запуска (используем правильное имя бинарника)
 CMD ["simple-file-storage"]
