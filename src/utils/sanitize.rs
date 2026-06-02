@@ -6,7 +6,7 @@ pub fn sanitize_filename(input: &str) -> Option<String> {
     }
     if !s
         .chars()
-        .all(|c| c.is_ascii_alphanumeric() || ".-_".contains(c))
+        .all(|c| c.is_ascii_alphanumeric() || ".-_()+%".contains(c))
     {
         return None;
     }
