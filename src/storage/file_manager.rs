@@ -5,74 +5,44 @@ use crate::utils::sanitize::sanitize_filename;
 use time::OffsetDateTime;
 use tokio::{fs, io::AsyncWriteExt};
 
-use tracing::{info, warn, debug, error};
+use tracing::{error, info, debug};
 
-   pub async fn save_file(
-       state: &AppState,
-       filename: &str,
-       mut field: axum::extract::multipart::Field<'_>,
-   ) -> Result<String, AppError> {
-       error!("sanitize_filename({:?}) → {:?}", filename, sanitize_filename(filename));
-       let safe_name =
-           sanitize_filename(filename).ok_or_else(|| AppError::bad_request("bad filename"))?;
+pub async fn save_file(
+    state: &AppState,
+    filename: &str,
+    mut field: axum::extract::multipart::Field<'_>,
+) -> Result<String, AppError> {
+    error!(
+        "sanitize_filename({:?}) → {:?}",
+        filename,
+        sanitize_filename(filename)
+    );
+    let safe_name =
+        sanitize_filename(filename).ok_or_else(|| AppError::bad_request("bad filename"))?;
 
-       let path = state.upload_dir.join(&safe_name);
-       info!("Saving to: {:?}", path);
+    let path = state.upload_dir.join(&safe_name);
+    info!("Saving to: {:?}", path);
 
-       let mut file = fs::File::create(&path)
-           .await
-           .map_err(|e| {
-               error!("Failed to create file: {}", e);
-               AppError::internal("cannot create file")
-           })?;
+    let mut file = fs::File::create(&path).await.map_err(|e| {
+        error!("Failed to create file: {}", e);
+        AppError::internal("cannot create file")
+    })?;
 
-       let mut total_bytes = 0;
-       while let Some(chunk) = field
-           .chunk()
-           .await
-           .map_err(|e| {
-               error!("Error reading field chunk: {}", e);
-               AppError::bad_request("bad upload stream")
-           })?
-       {
-           total_bytes += chunk.len();
-           file.write_all(&chunk)
-               .await
-               .map_err(|e| {
-                   error!("Error writing to file: {}", e);
-                   AppError::internal("write failed")
-               })?;
-       }
-       info!("Saved {} bytes", total_bytes);
+    let mut total_bytes = 0;
+    while let Some(chunk) = field.chunk().await.map_err(|e| {
+        error!("Error reading field chunk: {}", e);
+        AppError::bad_request("bad upload stream")
+    })? {
+        total_bytes += chunk.len();
+        file.write_all(&chunk).await.map_err(|e| {
+            error!("Error writing to file: {}", e);
+            AppError::internal("write failed")
+        })?;
+    }
+    debug!("Saved {} bytes", total_bytes);
 
-       Ok(safe_name)
-   }
-
-// pub async fn save_file(
-//     state: &AppState,
-//     filename: &str,
-//     mut field: axum::extract::multipart::Field<'_>,
-// ) -> Result<String, AppError> {
-//     let safe_name =
-//         sanitize_filename(filename).ok_or_else(|| AppError::bad_request("bad filename"))?;
-//
-//     let path = state.upload_dir.join(&safe_name);
-//     let mut file = fs::File::create(&path)
-//         .await
-//         .map_err(|_| AppError::internal("cannot create file"))?;
-//
-//     while let Some(chunk) = field
-//         .chunk()
-//         .await
-//         .map_err(|_| AppError::bad_request("bad upload stream"))?
-//     {
-//         file.write_all(&chunk)
-//             .await
-//             .map_err(|_| AppError::internal("write failed"))?;
-//     }
-//
-//     Ok(safe_name)
-// }
+    Ok(safe_name)
+}
 
 pub async fn apply_limit_and_track(state: &AppState, filename: &str) -> Result<(), AppError> {
     let now = OffsetDateTime::now_utc().unix_timestamp();

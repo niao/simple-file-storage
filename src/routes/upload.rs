@@ -6,7 +6,7 @@ use axum::{
     Json,
     extract::{Multipart, State},
 };
-use tracing::{info, warn, debug};
+use tracing::{debug, info, warn};
 
 pub async fn upload(
     State(state): State<AppState>,
@@ -18,22 +18,17 @@ pub async fn upload(
     let token = get_bearer_token(&headers)?;
     debug!("Bearer token extracted");
 
-    let _claims = jwt::verify_token(&state, token, "upload")
-        .map_err(|e| {
-            warn!(error = ?e, "JWT verification failed");
-            e
-        })?;
+    let _claims = jwt::verify_token(&state, token, "upload").map_err(|e| {
+        warn!(error = ?e, "JWT verification failed");
+        e
+    })?;
 
     info!("JWT verified successfully, scope=upload");
 
-    while let Some(field) = multipart
-        .next_field()
-        .await
-        .map_err(|_| {
-            warn!("Failed to read next multipart field");
-            crate::error::AppError::bad_request("bad multipart")
-        })?
-    {
+    while let Some(field) = multipart.next_field().await.map_err(|_| {
+        warn!("Failed to read next multipart field");
+        crate::error::AppError::bad_request("bad multipart")
+    })? {
         if field.name() != Some("file") {
             debug!("Skipping non-file field in multipart");
             continue;
@@ -79,10 +74,10 @@ fn get_bearer_token(headers: &axum::http::HeaderMap) -> Result<&str> {
         .get("authorization")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
-    auth.strip_prefix("Bearer ")
-        .ok_or_else(||{
-            warn!("Failed to strip Bearer prefix");
-            crate::error::AppError::unauthorized("invalid auth scheme")})
+    auth.strip_prefix("Bearer ").ok_or_else(|| {
+        warn!("Failed to strip Bearer prefix");
+        crate::error::AppError::unauthorized("invalid auth scheme")
+    })
 }
 
 #[derive(serde::Serialize)]

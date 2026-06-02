@@ -8,7 +8,7 @@ pub mod state;
 pub mod storage;
 pub mod utils;
 
-use tracing_subscriber::{EnvFilter};
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

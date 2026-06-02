@@ -16,11 +16,10 @@ pub async fn download(
 ) -> Result<Response, ApiError> {
     tracing::info!(filename = %filename, "Download request received");
 
-    let safe = sanitize_filename(&filename)
-        .ok_or_else(|| {
-            tracing::warn!(filename = %filename, "Invalid filename detected");
-            ApiError::new(StatusCode::BAD_REQUEST, "bad filename")
-        })?;
+    let safe = sanitize_filename(&filename).ok_or_else(|| {
+        tracing::warn!(filename = %filename, "Invalid filename detected");
+        ApiError::new(StatusCode::BAD_REQUEST, "bad filename")
+    })?;
 
     let path = state.upload_dir.join(&safe);
     tracing::debug!(path = %path.display(), "Resolved file path");
@@ -30,12 +29,10 @@ pub async fn download(
         return Err(ApiError::new(StatusCode::NOT_FOUND, "not found"));
     }
 
-    let file = fs::File::open(&path)
-        .await
-        .map_err(|e| {
-            tracing::error!(path = %path.display(), error = ?e, "Failed to open file");
-            ApiError::new(StatusCode::NOT_FOUND, "not found")
-        })?;
+    let file = fs::File::open(&path).await.map_err(|e| {
+        tracing::error!(path = %path.display(), error = ?e, "Failed to open file");
+        ApiError::new(StatusCode::NOT_FOUND, "not found")
+    })?;
 
     tracing::info!(filename = %safe, "Serving file");
 
@@ -54,7 +51,6 @@ pub async fn download(
 
     Ok(resp)
 }
-
 
 // pub async fn download(
 //     State(state): State<AppState>,
