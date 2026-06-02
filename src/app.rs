@@ -1,10 +1,10 @@
 use crate::routes::{download, health, internal, upload};
 use crate::state::AppState;
+use axum::extract::DefaultBodyLimit;
 use axum::{
     Router,
     routing::{get, post},
 };
-
 use tower_http::trace::TraceLayer;
 
 pub fn create_app(state: AppState) -> Router {
@@ -34,5 +34,6 @@ pub fn create_app(state: AppState) -> Router {
     }
 
     app.layer(TraceLayer::new_for_http())
+        .layer(DefaultBodyLimit::max(256_000_000))
         .with_state(state)
 }
