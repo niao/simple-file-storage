@@ -28,6 +28,9 @@ impl AppError {
     pub fn bad_request(msg: &'static str) -> Self {
         Self::new(StatusCode::BAD_REQUEST, msg)
     }
+    pub fn too_large() -> Self {
+        Self::new(StatusCode::PAYLOAD_TOO_LARGE, StatusCode::PAYLOAD_TOO_LARGE.canonical_reason().unwrap())
+    }
 
     pub fn not_found(msg: &'static str) -> Self {
         Self::new(StatusCode::NOT_FOUND, msg)

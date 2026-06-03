@@ -12,7 +12,7 @@ pub async fn save_file(
     filename: &str,
     mut field: axum::extract::multipart::Field<'_>,
 ) -> Result<String, AppError> {
-    error!(
+    debug!(
         "sanitize_filename({:?}) → {:?}",
         filename,
         sanitize_filename(filename)
@@ -30,8 +30,12 @@ pub async fn save_file(
 
     let mut total_bytes = 0;
     while let Some(chunk) = field.chunk().await.map_err(|e| {
-        error!("Error reading field chunk: {}", e);
-        AppError::bad_request("bad upload stream")
+        error!("Error reading field chunk: {}", e.status());
+        if is_size_error(&e) {
+            AppError::too_large()
+        } else {
+            AppError::bad_request("bad request")
+        }
     })? {
         total_bytes += chunk.len();
         file.write_all(&chunk).await.map_err(|e| {
@@ -64,4 +68,11 @@ pub async fn apply_limit_and_track(state: &AppState, filename: &str) -> Result<(
     }
 
     Ok(())
+}
+
+fn is_size_error(e: &axum::extract::multipart::MultipartError) -> bool {
+    let text = e.status().canonical_reason().unwrap().to_lowercase();
+    text.contains("length limit")
+        || text.contains("payload too large")
+        || text.contains("content length")
 }
