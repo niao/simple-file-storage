@@ -34,6 +34,6 @@ pub fn create_app(state: AppState) -> Router {
     }
 
     app.layer(TraceLayer::new_for_http())
-        .layer(DefaultBodyLimit::max(256_000_000))
+        .layer(DefaultBodyLimit::max(512_000_000))
         .with_state(state)
 }
