@@ -5,6 +5,7 @@ use axum::{
     Router,
     routing::{get, post},
 };
+
 use tower_http::trace::TraceLayer;
 
 pub fn create_app(state: AppState) -> Router {
@@ -34,6 +35,6 @@ pub fn create_app(state: AppState) -> Router {
     }
 
     app.layer(TraceLayer::new_for_http())
-        .layer(DefaultBodyLimit::max(512_000_000))
+        .layer(DefaultBodyLimit::max(crate::config::BODY_LIMIT))
         .with_state(state)
 }
