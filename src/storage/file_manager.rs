@@ -5,7 +5,7 @@ use crate::utils::sanitize::sanitize_filename;
 use time::OffsetDateTime;
 use tokio::{fs, io::AsyncWriteExt};
 
-use tracing::{error, info, debug};
+use tracing::{debug, error, info};
 
 pub async fn save_file(
     state: &AppState,
